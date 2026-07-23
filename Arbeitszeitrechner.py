@@ -188,30 +188,46 @@ elif funktion == "Saldo bei Abwesenheit (2 Mal Einstechen) berechnen":
         st.error("Bitte alle Zeiten im Format HH:MM eingeben.")
         valid_times = False
 
+
     if valid_times:
-        # Plausibilitätsprüfung
         if not (dt_ankunft1 < dt_gehen1 <= dt_ankunft2 < dt_gehen2):
             st.error("Bitte die chronologische Reihenfolge prüfen: Kommen 1 < Gehen 1 ≤ Kommen 2 < Gehen 2.")
         else:
-            # Abwesenheits- / Präsenzzeiten berechnen
             block1 = dt_gehen1 - dt_ankunft1
             block2 = dt_gehen2 - dt_ankunft2
-            brutto_arbeitszeit = block1 + block2
+            anwesenheit = block1 + block2
             abwesenheit = dt_ankunft2 - dt_gehen1
 
-            # Pausenanforderung ermitteln
-            if brutto_arbeitszeit <= timedelta(hours=6):
-                erforderliche_pause = timedelta(minutes=0)
-            else:
-                erforderliche_pause = timedelta(minutes=30)
 
-            # Pausenanrechnung:
-            # Reicht die Abwesenheit aus, um die Mindestpause zu decken?
-            # Wenn Abwesenheit > 30 Min., bleibt der Rest unterbrochene Arbeitszeit und wird nicht angerechnet.
-            zusaetzlicher_pausenabzug = max(timedelta(seconds=0), erforderliche_pause - abwesenheit)
-            tatsaechliche_arbeitszeit = brutto_arbeitszeit - zusaetzlicher_pausenabzug
+            if block1 <= timedelta(hours=6):
+                if anwesenheit <= timedelta(hours=6):
+                    gesetzliche_pause = timedelta(seconds=0)
+                    tatsaechliche_arbeitszeit = anwesenheit
+                elif timedelta (hours=6, minutes=0) < anwesenheit <= timedelta(hours=6, minutes=30):
+                    gesetzliche_pause = timedelta(minutes=30)
+                    pausenabzug = anwesenheit - timedelta(hours=6)
+                    tatsaechliche_arbeitszeit = anwesenheit - pausenabzug
+                elif anwesenheit > timedelta(hours=6, minutes=30):
+                    gesetzliche_pause = timedelta(minutes=30)
+                    tatsaechliche_arbeitszeit = anwesenheit - gesetzliche_pause
+            else:
+                gesetzliche_pause = timedelta(minutes=30)
+                if timedelta (hours=6, minutes=0) < anwesenheit <= timedelta(hours=6, minutes=30):
+                    if abwesenheit <= gesetzliche_pause:
+                        rest_pause = gesetzliche_pause - abwesenheit
+                        tatsaechliche_arbeitszeit = anwesenheit - rest_pause
+                    else:
+                        tatsaechliche_arbeitszeit = anwesenheit
+                elif anwesenheit > timedelta(hours=6, minutes=30):
+                    if abwesenheit <= gesetzliche_pause:
+                        rest_pause = gesetzliche_pause - abwesenheit
+                        tatsaechliche_arbeitszeit = anwesenheit - rest_pause
+                    else:
+                        zusaetzlicher_abzug = abwesenheit - gesetzliche_pause
+                        tatsaechliche_arbeitszeit = anwesenheit
 
             saldo = tatsaechliche_arbeitszeit - REGEL_ARBEITSZEIT
+
 
             # Formatierung
             saldo_minuten_total = int(saldo.total_seconds() // 60)
@@ -224,32 +240,53 @@ elif funktion == "Saldo bei Abwesenheit (2 Mal Einstechen) berechnen":
             arb_formatiert = f"{int(arb_sekunden // 3600):02d}:{int((arb_sekunden % 3600) // 60):02d}"
 
             min_abwesenheit = int(abwesenheit.total_seconds() // 60)
-            min_erforderlich = int(erforderliche_pause.total_seconds() // 60)
+            min_erforderlich = int(gesetzliche_pause.total_seconds() // 60)
+
 
             # Ausgabe
             st.subheader("Dein Saldo-Ergebnis")
+
 
             if saldo_minuten_total >= 0:
                 st.success(
                     f"Du hast heute **{saldo_formatiert} Stunden Plus** gemacht. \n\n"
                     f"Geleistete Arbeitszeit: `{arb_formatiert}` (Soll: 08:12)"
                 )
+
             else:
                 st.warning(
                     f"Du hast heute **{saldo_formatiert} Stunden Minus** gemacht. \n\n"
                     f"Geleistete Arbeitszeit: `{arb_formatiert}` (Soll: 08:12)"
                 )
 
-            st.info(
-                f"* ☕ Abwesenheit: **{min_abwesenheit} Min.**\n"
-                f"* 🥗 gesetzliche Pause: **{min_erforderlich} Min.**\n\n"
-                + (
-                    f"Da deine Abwesenheit von {min_abwesenheit} Min. die gesetzliche Pause von 30 Min. überschreitet, "
-                    f"werden die übersteigenden **{min_abwesenheit - 30} Min.** nicht als Arbeitszeit angerechnet."
-                    if min_abwesenheit > 30 and min_erforderlich == 30
-                    else "Deine Abwesenheit deckt die gesetzliche Pausenzeit vollständig ab."
+
+            hinweis_text = ""
+
+            if block1 > timedelta (hours=6):
+                if min_abwesenheit > min_erforderlich:
+                    hinweis_text = (
+                        f"Weil deine Abwesenheit von {min_abwesenheit} Min. die gesetzliche Pause von 30 Min. überschreitet, "
+                        f"werden die übersteigenden **{min_abwesenheit - 30} Min.** als unterbrochene Arbeitszeit gewertet."
+                    )
+                else:
+                    hinweis_text = (
+                        f"Deine Abwesenheit befindet sich innerhalb der gesetzlichen Pause."
+                    )
+            else:
+                hinweis_text = (
+                    f"Du hast bei der ersten Gehen-Buchung noch nicht mehr als 6:00 Stunden gearbeitet, weshalb die Abwesenheit als "
+                    f"unterbrochene Arbeitszeit erfasst wird. "
                 )
+
+            info_inhalt = (
+                f"* Abwesenheit: **{min_abwesenheit} Min.**\n"
+                f"* 🥗 Pause: **{min_erforderlich} Min.**"
             )
+
+            if hinweis_text:
+                info_inhalt += f"\n\n{hinweis_text}"
+
+            st.info(info_inhalt)
 
 
 # --- FUNKTION 4: GEHEN-ZEIT FÜR WUNSCH-SALDO BERECHNEN ---
