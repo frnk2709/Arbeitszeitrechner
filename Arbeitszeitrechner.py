@@ -169,13 +169,13 @@ elif funktion == "Saldo bei Abwesenheit (2 Mal Einstechen) berechnen":
 
     with col1:
         st.markdown("**1. Arbeitsblock**")
-        zeit_ankunft1 = st.text_input("Kommen 1 (HH:MM)", value="07:00", key="f4_ankunft1")
-        zeit_gehen1 = st.text_input("Gehen 1 (HH:MM)", value="12:00", key="f4_gehen1")
+        zeit_ankunft1 = st.text_input("Kommen 1 (HH:MM)", value="06:00", key="f4_ankunft1")
+        zeit_gehen1 = st.text_input("Gehen 1 (HH:MM)", value="13:00", key="f4_gehen1")
 
     with col2:
         st.markdown("**2. Arbeitsblock**")
-        zeit_ankunft2 = st.text_input("Kommen 2 (HH:MM)", value="12:45", key="f4_ankunft2")
-        zeit_gehen2 = st.text_input("Gehen 2 (HH:MM)", value="15:57", key="f4_gehen2")
+        zeit_ankunft2 = st.text_input("Kommen 2 (HH:MM)", value="13:45", key="f4_ankunft2")
+        zeit_gehen2 = st.text_input("Gehen 2 (HH:MM)", value="14:57", key="f4_gehen2")
 
     # Time Parsing
     try:
