@@ -279,7 +279,7 @@ elif funktion == "Saldo bei Abwesenheit (2 Mal Einstechen) berechnen":
                 )
 
             info_inhalt = (
-                f"* Abwesenheit: **{min_abwesenheit} Min.**\n"
+                f"* 🕑 Abwesenheit: **{min_abwesenheit} Min.**\n"
                 f"* 🥗 Pause: **{min_erforderlich} Min.**"
             )
 
